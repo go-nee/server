@@ -1,0 +1,88 @@
+<!-- 4-2) MongoDB에 저장된 온습도 데이터를 게시하는 웹페이지 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <!-- socket.io을 이용한 통신 & jquery 이용 -->
+    <script type="text/javascript" src="/socket.io/socket.io.js"></script>
+    <script src="http://code.jquery.com/jquery-3.3.1.min.js"></script>
+    
+    <!-- jquery -->
+    <script type="text/javascript">
+        var socket = null;
+        var timer = null;
+        $(document).ready(function(){
+            socket=io.connect(); // 웹서버(port=3000) 접속을 위한 소켓 생성
+    
+            // (a) 1000ms 마다 timer1() 호출
+            if(timer==null){
+                timer = window.setInterval("timer1()", 1000); 
+            }
+
+            // (c) 웹서버가 전송한 이벤트(socket_evt_mqtt) & 온습도 데이터(data)를 수신 
+            socket.on("socket_evt_mqtt", function(data){
+                var data = JSON.parse(data);
+                // 수신한 온습도 데이터를 웹페이지에 출력
+                $(".mqttlist").html(
+                    "<li>" + data.tmp + "(" + data.hum + "%)" + "</li>"
+                );                   
+            });
+        });
+    
+        // (b) setInterval 설정값(1초) 마다(a), 데이터 전송을 요청하는 이벤트(socket_evt_mqtt)를 웹서버로 전달
+        function timer1(){
+            socket.emit("socket_evt_mqtt", JSON.stringify({})); // 이벤트와 같이 데이터 전송 가능
+            console.log("----------");
+        }  
+
+        // 6-1) 소켓을 통해서 아두이노 LED on/off 정보를 웹 서버로 송신
+        function ledOnOff(value){
+            // {"led" : 1},  {"led" : 2}
+            socket.emit("socket_evt_led", JSON.stringify({led : Number(value)}));
+        }
+
+        // 7-1) REST 방식으로 아두이노 LED on/off 정보를 웹 서버로 송신
+        function ajaxledOnOff(value){
+            if(value=="1") var value="on";
+            else if(value=="2") var value="off";
+            $.ajax({
+                url : "http://웹서버IP주소:3000/devices/led", // 웹서버 IP 주소 입력
+                type : "post",
+                data : {"flag" : value},  // flag=on, flag=off
+                success : ledStatus,
+                error : function(){ alert("error"); }
+            });
+        }
+
+        // 7-2) 웹서버로의 요청 성공시, 그 결과(obj)를 웹페이지(ledStatus)에 출력
+        function ledStatus(obj){
+            $("#led").html("<font color='red'>" + obj.led + "</font> 되었습니다.");
+        }
+    </script>    
+</head>
+
+<body>
+    <h2> 소켓을 이용한 온습도(DHT11) 모니터링 서비스</h2> 
+    <div id="msg">
+        <div id="mqtt_logs">
+            <!-- 웹서버가 송신한 온습도 데이터 표시 -->
+            <ul class="mqttlist"></ul>
+        </div>
+        <hr/>
+        <!-- 아두이노의 LED 제어 신호를 웹서버로 전송 -->
+        <h2>socket 통신 방식(LED제어)</h2>
+        <button onclick="ledOnOff(1)">LED_ON</button>
+        <button onclick="ledOnOff(2)">LED_OFF</button>
+        <hr/>
+        <h2>RESTful Service 통신 방식(LED제어)</h2>
+        <button onclick="ajaxledOnOff(1)">LED_ON</button>
+        <button onclick="ajaxledOnOff(2)">LED_OFF</button>
+        <div id="led">LED STATUS</div>
+    </div>
+</body>
+</html>
+
+
