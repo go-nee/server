@@ -1,5 +1,5 @@
 const mqtt = require("mqtt");
-const client = mqtt.connect("mqtt://192.168.0.3"); //라즈베리파이의 IP주소
+const client = mqtt.connect("mqtt://127.0.0.1"); //라즈베리파이의 IP주소
 const DHT11 = require("./models/DHT11");
 
 const express = require("express");
@@ -8,15 +8,17 @@ const http = require("http");
 const mongoose = require("mongoose");
 const dotenv = require('dotenv/config');
 
+
+//mqtt 접속시
 client.on("connect", ()=>{
     //ades
     console.log("moquitoo server connected"); 
-    client.subscribe("dnt11");
+    client.subscribe("dht11");
 });
 
 client.on("message", (topic, message)=>{
     var obj = JSON.parse(message); //message -> JSON형식으로 변환
-    var date = new Date();
+    var date = new Date();  //시간 정보 생성 --> MongoDB에 온습도/시간 정보 저장
     var year = date.getFullYear();
     var month = date.getMonth();
     var today = date.getDate();
@@ -24,8 +26,8 @@ client.on("message", (topic, message)=>{
     var minutes = date.getMinutes();
     var seconds = date.getSeconds();
     obj.created_at = new Date(Date.UTC(year, month, today, hours, minutes, seconds));
-
-    console.log(obj);
+                            // create_at 속성 생성 = 날짜 정보(key:value)
+    console.log(obj);       // obj 값(온습도 데이터, 시간정보) 출력
 
 
     //DHT11 모듈로부터 dht11 객체를 생성하고 mqtt로부터 수신한 데이터(obj 객체)를 dht11 컬렉션에 저장
@@ -35,7 +37,7 @@ client.on("message", (topic, message)=>{
         created_at : obj.created_at
     });
     try{
-        const saveDHT11 = dht11.save();
+        const saveDHT11 = dht11.save();  //DB에 저장
         console.log("insert Ok");
     }catch(err){
         console.log({message : err});
@@ -43,7 +45,7 @@ client.on("message", (topic, message)=>{
 });
 
 //웹 서버 구축
-app.set("port", "3000");    //포트 설정
+app.set("port", "3000");                //포트 설정
 var server = http.createServer(app);    //서버 생성
 
 //웹 서버 구동 및 MongoDB 접속
