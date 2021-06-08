@@ -4,7 +4,7 @@ const mqtt = require("mqtt");
 const DHT11 = require("../models/DHT11");
 
 //mosquitto server에 접속하기
-const clinet = mqtt.connect("mqtt://127.0.0.1");
+const clinet = mqtt.connect("mqtt://192.168.15.79");
 
 //웹 클라이언트(mqtt.html)가 post 방식으로 URL(http://192.168.0.6:3000/devices/led)요청시 처리
 //웹 클라이언트로부터 수신한 데이터: {"flag": value}

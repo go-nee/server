@@ -1,5 +1,5 @@
 const mqtt = require("mqtt");
-const client = mqtt.connect("mqtt://127.0.0.1"); //라즈베리파이의 IP주소
+const client = mqtt.connect("mqtt://192.168.15.79"); //라즈베리파이의 IP주소
 const DHT11 = require("./models/DHT11");
 
 const express = require("express");
@@ -11,7 +11,7 @@ const dotenv = require('dotenv/config');
 
 //mqtt 접속시
 client.on("connect", ()=>{
-    //ades
+    
     console.log("moquitoo server connected"); 
     client.subscribe("dht11");
 });
@@ -31,18 +31,27 @@ client.on("message", (topic, message)=>{
 
 
     //DHT11 모듈로부터 dht11 객체를 생성하고 mqtt로부터 수신한 데이터(obj 객체)를 dht11 컬렉션에 저장
-    const dnt11 = new DHT11({
+    const dht11 = new DHT11({
         tmp : obj.tmp,
-        hun : obj.hum,
+        hum : obj.hum,
         created_at : obj.created_at
     });
     try{
+        if(obj.tmp > 28){
+            client.publish("led_ctr_state", "0");     // led 제어 상태 RED
+            console.log("mqtt 0 전송");
+        }else{
+            client.publish("led_ctr_state", "1");     // led 제어 상태 GREEN
+            console.log("mqtt 1 전송");
+        }
         const saveDHT11 = dht11.save();  //DB에 저장
         console.log("insert Ok");
     }catch(err){
         console.log({message : err});
     }
 });
+
+
 
 //웹 서버 구축
 app.set("port", "3000");                //포트 설정
@@ -69,7 +78,19 @@ io.on("connection", (socket)=>{
         //MongoDB의 DHT11 컬렉션에 있는 데이터를 받아서 클라이언트에 송신
         DHT11.find({}).sort({_id : -1}).limit(1).then(obj=>{
             socket.emit("socket_evt_mqtt",JSON.stringify(obj[0]));
+
+            //온도에 따른 LED 제어 신호를 mqtt를 통해 아두이노로 전달
+            var data = JSON.parse(obj[0]);
+            if(data.tmp >= 25){
+                client.publish("led_ctr_state", "0");     // led 제어 상태 RED
+            }else{
+                client.publish("led_ctr_state", "1");     // led 제어 상태 GREEN
+            }
+            
+
         });
+
+
     });
 });
 

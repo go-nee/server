@@ -1,3 +1,4 @@
+
 //MongoDB에 온습도 데이터 저장하기 위해서 스키마 생성
 const mongoose = require("mongoose");   //스키마 생성 위한 mongoose 모듈
 const DHT11Schema = mongoose.Schema({
