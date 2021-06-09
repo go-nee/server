@@ -19,7 +19,7 @@
     
             // (a) 1000ms 마다 timer1() 호출
             if(timer==null){
-                timer = window.setInterval("timer1()", 1000); 
+                timer = window.setInterval("timer1()", 3000); 
             }
 
             // (c) 웹서버가 전송한 이벤트(socket_evt_mqtt) & 온습도 데이터(data)를 수신 
@@ -27,7 +27,7 @@
                 var data = JSON.parse(data);
                 // 수신한 온습도 데이터를 웹페이지에 출력
                 $(".mqttlist").html(
-                    "<li>" + data.tmp + "(" + data.hum + "%)" + "</li>"
+                    "<li><h4> " + data.tmp + "(" + data.hum + "%)" + "</h4></li>"
                 );                   
             });
         });
@@ -38,10 +38,10 @@
             console.log("----------");
         }  
 
-        // 6-1) 소켓을 통해서 아두이노 LED on/off 정보를 웹 서버로 송신
-        function ledOnOff(value){
-            // {"led" : 1},  {"led" : 2}
-            socket.emit("socket_evt_led", JSON.stringify({led : Number(value)}));
+        // 6-1) 소켓을 통해서 아두이노 LCD on/off 정보를 웹 서버로 송신
+        function changelcd(value){
+            // {"led" : 3},  {"led" : 4}
+            socket.emit("socket_evt_lcd", JSON.stringify({lcd : Number(value)}));
         }
 
         // 7-1) REST 방식으로 아두이노 LED on/off 정보를 웹 서버로 송신
@@ -73,14 +73,10 @@
         </div>
         <hr/>
         <!-- 아두이노의 LED 제어 신호를 웹서버로 전송 -->
-        <h2>socket 통신 방식(LED제어)</h2>
-        <button onclick="ledOnOff(1)">LED_ON</button>
-        <button onclick="ledOnOff(2)">LED_OFF</button>
+        <h2>socket 통신 방식(LCD제어)</h2>
+        <button onclick="changelcd(3)">온도</button>
+        <button onclick="changelcd(4)">온/습도</button>
         <hr/>
-        <h2>RESTful Service 통신 방식(LED제어)</h2>
-        <button onclick="ajaxledOnOff(1)">LED_ON</button>
-        <button onclick="ajaxledOnOff(2)">LED_OFF</button>
-        <div id="led">LED STATUS</div>
     </div>
 </body>
 </html>

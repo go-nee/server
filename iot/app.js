@@ -1,5 +1,5 @@
 const mqtt = require("mqtt");
-const client = mqtt.connect("mqtt://192.168.15.79"); //라즈베리파이의 IP주소
+const client = mqtt.connect("mqtt://192.168.254.73"); //라즈베리파이의 IP주소
 const DHT11 = require("./models/DHT11");
 
 const express = require("express");
@@ -37,13 +37,16 @@ client.on("message", (topic, message)=>{
         created_at : obj.created_at
     });
     try{
-        if(obj.tmp > 28){
-            client.publish("led_ctr_state", "0");     // led 제어 상태 RED
-            console.log("mqtt 0 전송");
-        }else{
-            client.publish("led_ctr_state", "1");     // led 제어 상태 GREEN
-            console.log("mqtt 1 전송");
-        }
+        
+        // if(obj.tmp > 28){
+        //     client.publish("led", "0");     // led 제어 상태 RED
+        //     console.log("mqtt 0 전송");
+
+        // }else{
+        //     client.publish("led", "1");     // led 제어 상태 GREEN
+        //     console.log("mqtt 1 전송");
+            
+        // }
         const saveDHT11 = dht11.save();  //DB에 저장
         console.log("insert Ok");
     }catch(err){
@@ -69,6 +72,7 @@ server.listen(3000, (err)=>{
     }
 });
 
+
 // 클라이언트와 통신하기 위해 소켓 만들기(socket.io 모듈 이용)
 var io = require("socket.io")(server);
 // io에 connection 이벤트를 등록()
@@ -77,20 +81,18 @@ io.on("connection", (socket)=>{
     socket.on("socket_evt_mqtt", (data)=>{
         //MongoDB의 DHT11 컬렉션에 있는 데이터를 받아서 클라이언트에 송신
         DHT11.find({}).sort({_id : -1}).limit(1).then(obj=>{
-            socket.emit("socket_evt_mqtt",JSON.stringify(obj[0]));
-
-            //온도에 따른 LED 제어 신호를 mqtt를 통해 아두이노로 전달
-            var data = JSON.parse(obj[0]);
-            if(data.tmp >= 25){
-                client.publish("led_ctr_state", "0");     // led 제어 상태 RED
-            }else{
-                client.publish("led_ctr_state", "1");     // led 제어 상태 GREEN
-            }
-            
+            socket.emit("socket_evt_mqtt", JSON.stringify(obj[0]));
 
         });
 
 
+    });
+
+    socket.on("socket_evt_lcd", (data)=>{
+        //mosquitto 서버로 led 토픽 송신
+        var obj = JSON.parse(data);
+        client.publish("lcd", obj.lcd + "");
+        
     });
 });
 
